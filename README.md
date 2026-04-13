@@ -1,5 +1,8 @@
 # ИИ-ассистент для входящих заявок в техподдержку
 
+[![CI](https://github.com/Edwards359/support-intake-telegram-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/Edwards359/support-intake-telegram-bot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Telegram-бот для первичной обработки входящих обращений: диалог с клиентом, извлечение полей через LLM (Chat Completions + JSON Schema), структурированная заявка в чат операторов.
 
 ## Возможности
@@ -108,19 +111,14 @@ docker compose up --build -d
 - Если у пользователя есть `@username`, бот может подставить его как контакт по умолчанию.
 - Не коммитьте `.env` и секреты. Для продакшена имеет смысл вынести постоянное хранилище, ретраи и аудит.
 
-## Публикация на GitHub
+## Репозиторий на GitHub
 
-1. Убедитесь, что в индексе нет секретов: `git status`, в списке не должно быть `.env`.
-2. Задайте в настройках репозитория **ветку по умолчанию** `main` (или поправьте список веток в `.github/workflows/ci.yml` под вашу ветку).
-3. Имя репозитория лучше выбрать коротким латиницей без пробелов — так проще клонировать и подключать CI.
-4. Если Git пишет про **dubious ownership** (папка на диске принадлежит другому «владельцу» Windows), выполните:  
-   `git config --global --add safe.directory "D:/полный/путь/к/этому/проекту"`
+[github.com/Edwards359/support-intake-telegram-bot](https://github.com/Edwards359/support-intake-telegram-bot)
 
 ```bash
-git init
-git add .
-git commit -m "Initial commit: Telegram support intake bot"
-git branch -M main
-git remote add origin https://github.com/<user>/<repo>.git
-git push -u origin main
+git clone https://github.com/Edwards359/support-intake-telegram-bot.git
+cd support-intake-telegram-bot
 ```
+
+Перед коммитом проверяйте `git status`: в индексе не должно быть `.env`. Если Git сообщает о **dubious ownership** для каталога на диске `D:`, добавьте путь в исключения:  
+`git config --global --add safe.directory "D:/полный/путь/к/клону"`
