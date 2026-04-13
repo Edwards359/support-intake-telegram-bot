@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     operator_chat_id: int = Field(..., alias="OPERATOR_CHAT_ID")
 
     openai_api_key: str = Field(..., alias="OPENAI_API_KEY")
-    openai_model: str = Field(default="gpt-4.1-mini", alias="OPENAI_MODEL")
+    openai_model: str = Field(default="gpt-5.4-mini-2026-03-17", alias="OPENAI_MODEL")
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
 
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
