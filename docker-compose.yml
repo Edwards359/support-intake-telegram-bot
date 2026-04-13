@@ -1,0 +1,5 @@
+services:
+  support-bot:
+    build: .
+    env_file: .env
+    restart: unless-stopped
