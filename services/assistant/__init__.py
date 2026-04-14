@@ -1,3 +1,3 @@
-from .openai_support_assistant import OpenAISupportAssistant
+from .openai_lead_assistant import OpenAILeadAssistant
 
-__all__ = ["OpenAISupportAssistant"]
+__all__ = ["OpenAILeadAssistant"]

@@ -3,19 +3,20 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 
-Priority = Literal["срочно", "средне", "низкий приоритет"]
+LeadTimeline = Literal["до 2 недель", "до 1 месяца", "1-3 месяца", "позже / не определились"]
+LeadTemperature = Literal["горячий", "тёплый", "холодный"]
 MessageRole = Literal["user", "assistant"]
 
 
-class SupportTicket(BaseModel):
+class SalesLead(BaseModel):
     name: str | None = None
     contact: str | None = None
-    problem_summary: str | None = None
-    occurred_at: str | None = None
-    location: str | None = None
-    priority: Priority | None = None
+    company: str | None = None
+    need_summary: str | None = None
+    timeline: LeadTimeline | None = None
+    lead_temperature: LeadTemperature | None = None
 
-    @field_validator("name", "contact", "problem_summary", "occurred_at", "location")
+    @field_validator("name", "contact", "company", "need_summary")
     @classmethod
     def clean_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -23,7 +24,7 @@ class SupportTicket(BaseModel):
         cleaned = " ".join(value.split()).strip()
         return cleaned or None
 
-    def merge(self, other: "SupportTicket") -> None:
+    def merge(self, other: "SalesLead") -> None:
         for field_name, value in other.model_dump().items():
             if value not in (None, ""):
                 setattr(self, field_name, value)
@@ -33,10 +34,10 @@ class SupportTicket(BaseModel):
             [
                 self.name,
                 self.contact,
-                self.problem_summary,
-                self.occurred_at,
-                self.location,
-                self.priority,
+                self.company,
+                self.need_summary,
+                self.timeline,
+                self.lead_temperature,
             ]
         )
 
@@ -56,18 +57,18 @@ class DialogueMessage(BaseModel):
 
 class AssistantTurn(BaseModel):
     reply: str = Field(min_length=1)
-    extracted_ticket: SupportTicket = Field(default_factory=SupportTicket)
+    extracted_lead: SalesLead = Field(default_factory=SalesLead)
     ready_to_submit: bool = False
 
 
-class SupportSession(BaseModel):
+class LeadSession(BaseModel):
     user_id: int
     chat_id: int
     telegram_username: str | None = None
     telegram_first_name: str | None = None
     started: bool = False
     submitted: bool = False
-    ticket: SupportTicket = Field(default_factory=SupportTicket)
+    lead: SalesLead = Field(default_factory=SalesLead)
     history: list[DialogueMessage] = Field(default_factory=list)
 
     def add_user_message(self, text: str) -> None:
@@ -89,7 +90,7 @@ class SupportSession(BaseModel):
     def reset(self) -> None:
         self.started = False
         self.submitted = False
-        self.ticket = SupportTicket()
+        self.lead = SalesLead()
         self.history = []
 
     def _append_history(self, role: MessageRole, text: str) -> None:

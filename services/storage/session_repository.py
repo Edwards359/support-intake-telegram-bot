@@ -1,9 +1,9 @@
-from core import SupportSession
+from core import LeadSession
 
 
 class InMemorySessionRepository:
     def __init__(self) -> None:
-        self._sessions: dict[int, SupportSession] = {}
+        self._sessions: dict[int, LeadSession] = {}
 
     def get_or_create(
         self,
@@ -11,10 +11,10 @@ class InMemorySessionRepository:
         chat_id: int,
         telegram_username: str | None,
         telegram_first_name: str | None,
-    ) -> SupportSession:
+    ) -> LeadSession:
         session = self._sessions.get(user_id)
         if session is None:
-            session = SupportSession(
+            session = LeadSession(
                 user_id=user_id,
                 chat_id=chat_id,
                 telegram_username=telegram_username,

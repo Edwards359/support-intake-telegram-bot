@@ -1,13 +1,13 @@
-from core import SupportTicket
+from core import SalesLead
 
 
-def format_collected_ticket(ticket: SupportTicket) -> str:
+def format_collected_lead(lead: SalesLead) -> str:
     lines = [
-        f"Имя: {ticket.name or '-'}",
-        f"Контакт: {ticket.contact or '-'}",
-        f"Проблема: {ticket.problem_summary or '-'}",
-        f"Когда возникло: {ticket.occurred_at or '-'}",
-        f"Где: {ticket.location or '-'}",
-        f"Приоритет: {ticket.priority or '-'}",
+        f"Имя: {lead.name or '-'}",
+        f"Контакт: {lead.contact or '-'}",
+        f"Компания: {lead.company or '-'}",
+        f"Интерес: {lead.need_summary or '-'}",
+        f"Сроки: {lead.timeline or '-'}",
+        f"Температура: {lead.lead_temperature or '-'}",
     ]
     return "\n".join(lines)

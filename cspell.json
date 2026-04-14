@@ -1,0 +1,10 @@
+{
+  "version": "0.2",
+  "ignorePaths": [
+    ".env",
+    ".env.example",
+    "**/.env",
+    "**/.env.example",
+    "assignment/**"
+  ]
+}

@@ -1,3 +1,3 @@
-from .workflow import SupportWorkflowService
+from .workflow import LeadWorkflowService
 
-__all__ = ["SupportWorkflowService"]
+__all__ = ["LeadWorkflowService"]

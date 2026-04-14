@@ -1,27 +1,27 @@
 import logging
 
-from core import SupportSession
-from services.assistant import OpenAISupportAssistant
+from core import LeadSession
+from services.assistant import OpenAILeadAssistant
 from services.telegram import OperatorNotifier
 
 logger = logging.getLogger(__name__)
 
 FINAL_CLIENT_MESSAGE = (
-    "Спасибо! Я передал вашу заявку специалисту. "
-    "Мы свяжемся с вами в ближайшее время."
+    "Спасибо! Я передал вашу заявку менеджеру по продажам. "
+    "С вами свяжутся в ближайшее время."
 )
 
 
-class SupportWorkflowService:
+class LeadWorkflowService:
     def __init__(
         self,
-        assistant: OpenAISupportAssistant,
+        assistant: OpenAILeadAssistant,
         notifier: OperatorNotifier,
     ) -> None:
         self._assistant = assistant
         self._notifier = notifier
 
-    async def process_message(self, session: SupportSession, message_text: str) -> str:
+    async def process_message(self, session: LeadSession, message_text: str) -> str:
         if session.submitted:
             session.reset()
 
@@ -30,7 +30,7 @@ class SupportWorkflowService:
         is_new_session = not history_before_turn and not session.started
 
         turn = await self._assistant.generate_turn(
-            current_ticket=session.ticket,
+            current_lead=session.lead,
             user_message=message_text,
             is_new_session=is_new_session,
             conversation_history=history_before_turn,
@@ -39,25 +39,25 @@ class SupportWorkflowService:
         )
 
         session.add_user_message(message_text)
-        session.ticket.merge(turn.extracted_ticket)
+        session.lead.merge(turn.extracted_lead)
         session.started = True
 
-        if session.ticket.is_complete() and turn.ready_to_submit:
-            await self._notifier.send_ticket(session)
+        if session.lead.is_complete() and turn.ready_to_submit:
+            await self._notifier.send_lead(session)
             session.submitted = True
             session.add_assistant_message(FINAL_CLIENT_MESSAGE)
-            logger.info("Ticket submitted for user_id=%s", session.user_id)
+            logger.info("Lead submitted for user_id=%s", session.user_id)
             return FINAL_CLIENT_MESSAGE
 
         session.add_assistant_message(turn.reply)
         return turn.reply
 
     @staticmethod
-    def _prefill_contact_from_telegram(session: SupportSession) -> None:
-        if session.ticket.contact:
+    def _prefill_contact_from_telegram(session: LeadSession) -> None:
+        if session.lead.contact:
             return
         if session.telegram_username:
-            session.ticket.contact = f"@{session.telegram_username}"
+            session.lead.contact = f"@{session.telegram_username}"
 
     async def close(self) -> None:
         await self._assistant.close()

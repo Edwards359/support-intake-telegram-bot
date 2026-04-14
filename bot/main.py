@@ -5,8 +5,8 @@ from aiogram.client.default import DefaultBotProperties
 
 from bot.handlers import router
 from core import get_settings, setup_logging
-from services import SupportWorkflowService
-from services.assistant import OpenAISupportAssistant
+from services import LeadWorkflowService
+from services.assistant import OpenAILeadAssistant
 from services.storage import InMemorySessionRepository
 from services.telegram import OperatorNotifier
 
@@ -19,16 +19,16 @@ async def run_bot() -> None:
 
     bot = Bot(token=settings.telegram_bot_token, default=DefaultBotProperties())
     session_repository = InMemorySessionRepository()
-    assistant = OpenAISupportAssistant(settings)
+    assistant = OpenAILeadAssistant(settings)
     notifier = OperatorNotifier(bot, settings)
-    workflow = SupportWorkflowService(assistant=assistant, notifier=notifier)
+    workflow = LeadWorkflowService(assistant=assistant, notifier=notifier)
 
     dp = Dispatcher()
     dp.include_router(router)
     dp["session_repository"] = session_repository
     dp["workflow"] = workflow
 
-    logger.info("Starting support intake bot")
+    logger.info("Starting sales lead intake bot")
     try:
         await dp.start_polling(bot)
     finally:

@@ -1,6 +1,6 @@
 from aiogram import Bot
 
-from core import Settings, SupportSession
+from core import LeadSession, Settings
 
 
 class OperatorNotifier:
@@ -8,21 +8,20 @@ class OperatorNotifier:
         self._bot = bot
         self._settings = settings
 
-    async def send_ticket(self, session: SupportSession) -> None:
-        ticket = session.ticket
+    async def send_lead(self, session: LeadSession) -> None:
+        lead = session.lead
         lines = [
-            "=== НОВАЯ ЗАЯВКА В ТП ===",
+            "=== НОВЫЙ ЛИД (ПРОДАЖИ) ===",
             "",
-            f"Имя: {ticket.name}",
-            f"Контакт: {ticket.contact}",
+            f"Имя: {lead.name}",
+            f"Контакт: {lead.contact}",
+            f"Компания / тип: {lead.company}",
             "",
-            "Проблема:",
-            f"{ticket.problem_summary}",
+            "Интерес / задача:",
+            f"{lead.need_summary}",
             "",
-            f"Когда возникло: {ticket.occurred_at}",
-            f"Где: {ticket.location}",
-            "",
-            f"Приоритет: {ticket.priority}",
+            f"Сроки решения: {lead.timeline}",
+            f"Температура: {lead.lead_temperature}",
             "",
             f"Telegram user id: {session.user_id}",
             f"Telegram username: @{session.telegram_username}" if session.telegram_username else "Telegram username: -",

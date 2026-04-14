@@ -1,5 +1,7 @@
+name: sales-lead-bot
+
 services:
-  support-bot:
+  sales-lead-bot:
     build: .
     env_file: .env
     restart: unless-stopped

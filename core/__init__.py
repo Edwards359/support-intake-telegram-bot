@@ -1,12 +1,12 @@
 from .config import Settings, get_settings
 from .logging import setup_logging
-from .schemas import AssistantTurn, SupportSession, SupportTicket
+from .schemas import AssistantTurn, LeadSession, SalesLead
 
 __all__ = [
     "AssistantTurn",
+    "LeadSession",
+    "SalesLead",
     "Settings",
-    "SupportSession",
-    "SupportTicket",
     "get_settings",
     "setup_logging",
 ]
