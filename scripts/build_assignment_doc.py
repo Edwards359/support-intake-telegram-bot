@@ -60,12 +60,14 @@ def build_document() -> Document:
     doc.add_heading("3. Спроектированные изменения схемы и промпта", level=1)
     _add_paragraphs(
         doc,
-        "Заявка переименована в смысле полей на SalesLead: name, contact, company, need_summary, timeline, lead_temperature.",
+        "Заявка переименована в смысле полей на SalesLead: name, contact, company, need_summary, timeline, lead_temperature; опционально lead_source (откуда узнали о компании).",
+        "Критерии полноты заявки зафиксированы константой REQUIRED_FIELDS_FOR_COMPLETION и методом missing_required_fields(); контакт должен проходить проверку (телефон 10–15 цифр, email или @username).",
         "Удалены поля occurred_at, location и приоритет ТП; вместо problem_summary используется need_summary; timeline и lead_temperature заданы перечислениями (Literal / enum в JSON Schema).",
         "Сессия LeadSession хранит lead: SalesLead; AssistantTurn возвращает extracted_lead.",
-        "Системный промпт переведён на роль пресейла: перечень полей, правила не выдумывать данные, уточнение при ответе вне enum, порядок сбора данных, условие ready_to_submit.",
-        "JSON Schema (strict) синхронизирована с Pydantic-моделью; при сбое API сохранён локальный fallback в OpenAILeadAssistant.",
-        "Шаблон уведомления оператора заменён на блок «НОВЫЙ ЛИД (ПРОДАЖИ)» с новыми полями и идентификаторами Telegram.",
+        "Системный промпт переведён на роль пресейла: перечень полей, явный блок completion_criteria, правила не выдумывать данные, уточнение при ответе вне enum, порядок сбора данных, условие ready_to_submit.",
+        "JSON Schema (strict) синхронизирована с Pydantic-моделью; в user-промпт передаются missing_required_fields_for_completion; при сбое API сохранён локальный fallback в OpenAILeadAssistant.",
+        "Шаблон уведомления оператора заменён на блок «НОВЫЙ ЛИД (ПРОДАЖИ)» с каналом Telegram, источником лида, полями заявки и идентификаторами Telegram; опционально POST на CRM_WEBHOOK_URL после уведомления в чат с заголовком Idempotency-Key.",
+        "Метрики качества диалога: счётчики ходов / преждевременных ready_to_submit / успешных отправок и логи lead_quality_*; A/B системного промпта через PROMPT_VARIANT=default|alt; извлечение контакта вынесено в services/lead_contact_tools.py.",
     )
 
     doc.add_heading("4. Логика workflow бота", level=1)
@@ -77,7 +79,8 @@ def build_document() -> Document:
         "Шаг 4. Краткое описание интереса (продукт, услуга, задача), при уточнениях обновление need_summary.",
         "Шаг 5. Сроки принятия решения — выбор из фиксированных значений timeline; при некорректном ответе повтор вопроса с перечислением вариантов.",
         "Шаг 6. Температура лида (горячий / тёплый / холодный) по смыслу ответа.",
-        "Шаг 7. При полной заявке и ready_to_submit=true — отправка в чат менеджеров и финальное сообщение пользователю; при неполных данных — краткий ответ с одним уточняющим вопросом.",
+        "Шаг 6а. По желанию — откуда узнали о компании (lead_source).",
+        "Шаг 7. При полной заявке (is_complete) и ready_to_submit=true — отправка в чат менеджеров, при необходимости вебхук в CRM, финальное сообщение пользователю; если модель вернула ready_to_submit при неполных данных — уточняющий ответ без отправки.",
     )
 
     doc.add_heading("5. Краткий отчёт с обоснованием правок", level=1)

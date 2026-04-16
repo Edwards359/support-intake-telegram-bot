@@ -1,7 +1,10 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PromptVariant = Literal["default", "alt"]
 
 
 class Settings(BaseSettings):
@@ -13,6 +16,11 @@ class Settings(BaseSettings):
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
 
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+
+    crm_webhook_url: str | None = Field(default=None, alias="CRM_WEBHOOK_URL")
+    crm_webhook_secret: str | None = Field(default=None, alias="CRM_WEBHOOK_SECRET")
+
+    prompt_variant: PromptVariant = Field(default="default", alias="PROMPT_VARIANT")
 
     model_config = SettingsConfigDict(
         env_file=".env",

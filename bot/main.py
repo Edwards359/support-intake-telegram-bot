@@ -21,7 +21,7 @@ async def run_bot() -> None:
     session_repository = InMemorySessionRepository()
     assistant = OpenAILeadAssistant(settings)
     notifier = OperatorNotifier(bot, settings)
-    workflow = LeadWorkflowService(assistant=assistant, notifier=notifier)
+    workflow = LeadWorkflowService(assistant=assistant, notifier=notifier, settings=settings)
 
     dp = Dispatcher()
     dp.include_router(router)
@@ -32,5 +32,11 @@ async def run_bot() -> None:
     try:
         await dp.start_polling(bot)
     finally:
-        await workflow.close()
-        await bot.session.close()
+        try:
+            await workflow.close()
+        except Exception:
+            logger.exception("run_bot: failed to close workflow (assistant HTTP client)")
+        try:
+            await bot.session.close()
+        except Exception:
+            logger.exception("run_bot: failed to close Telegram bot session")

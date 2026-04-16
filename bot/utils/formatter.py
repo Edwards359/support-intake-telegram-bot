@@ -9,5 +9,6 @@ def format_collected_lead(lead: SalesLead) -> str:
         f"Интерес: {lead.need_summary or '-'}",
         f"Сроки: {lead.timeline or '-'}",
         f"Температура: {lead.lead_temperature or '-'}",
+        f"Источник: {lead.lead_source or '-'}",
     ]
     return "\n".join(lines)

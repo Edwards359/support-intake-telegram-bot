@@ -4,10 +4,12 @@ import logging
 import re
 
 import httpx
+from pydantic import ValidationError
 
-from core import AssistantTurn, SalesLead, Settings
+from core import AssistantTurn, REQUIRED_FIELDS_FOR_COMPLETION, SalesLead, Settings
 from core.schemas import DialogueMessage, LeadTemperature, LeadTimeline
-from services.assistant.prompts import LEAD_ASSISTANT_PROMPT, LEAD_RESPONSE_SCHEMA
+from services.assistant.prompts import LEAD_RESPONSE_SCHEMA, lead_system_prompt
+from services.lead_contact_tools import extract_contact_from_free_text
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ class OpenAILeadAssistant:
             "model": self._settings.openai_model,
             "temperature": 0.2,
             "messages": [
-                {"role": "system", "content": LEAD_ASSISTANT_PROMPT},
+                {"role": "system", "content": lead_system_prompt(self._settings.prompt_variant)},
                 {
                     "role": "user",
                     "content": self._build_user_prompt(
@@ -58,13 +60,7 @@ class OpenAILeadAssistant:
             },
         }
 
-        try:
-            response = await self._post_with_retries(payload)
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
-            return AssistantTurn.model_validate(json.loads(content))
-        except Exception:
-            logger.exception("Falling back to local lead turn generation")
+        def fallback_turn() -> AssistantTurn:
             return self._build_fallback_turn(
                 current_lead=current_lead,
                 user_message=user_message,
@@ -74,8 +70,41 @@ class OpenAILeadAssistant:
                 telegram_first_name=telegram_first_name,
             )
 
+        try:
+            response = await self._post_with_retries(payload)
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+            return AssistantTurn.model_validate(json.loads(content))
+        except json.JSONDecodeError:
+            logger.exception("AssistantResponseParseError: invalid JSON in API response or model content")
+            return fallback_turn()
+        except ValidationError:
+            logger.exception("AssistantResponseParseError: AssistantTurn validation failed for model output")
+            return fallback_turn()
+        except (KeyError, IndexError, TypeError) as exc:
+            logger.exception(
+                "AssistantServiceError: unexpected chat/completions payload shape (%s)",
+                type(exc).__name__,
+            )
+            return fallback_turn()
+        except httpx.HTTPError:
+            logger.exception("AssistantHTTPError: chat completions failed")
+            return fallback_turn()
+        except Exception as exc:
+            logger.exception(
+                "AssistantServiceError: unexpected error during generate_turn (%s)",
+                type(exc).__name__,
+            )
+            return fallback_turn()
+
     async def close(self) -> None:
-        await self._client.aclose()
+        try:
+            await self._client.aclose()
+        except Exception as exc:
+            logger.exception(
+                "AssistantServiceError: failed to close httpx client (%s)",
+                type(exc).__name__,
+            )
 
     async def _post_with_retries(self, payload: dict) -> httpx.Response:
         last_error: Exception | None = None
@@ -90,16 +119,31 @@ class OpenAILeadAssistant:
             except httpx.HTTPStatusError as exc:
                 last_error = exc
                 status_code = exc.response.status_code
+                logger.warning(
+                    "OpenAILeadAssistant HTTPStatusError attempt=%s status=%s",
+                    attempt,
+                    status_code,
+                )
                 if status_code not in RETRYABLE_STATUS_CODES or attempt == 3:
                     raise
             except httpx.RequestError as exc:
                 last_error = exc
+                logger.warning(
+                    "OpenAILeadAssistant RequestError attempt=%s type=%s",
+                    attempt,
+                    type(exc).__name__,
+                )
                 if attempt == 3:
                     break
 
             await asyncio.sleep(0.75 * attempt)
 
         assert last_error is not None
+        logger.error(
+            "AssistantHTTPError: exhausted retries (%s)",
+            type(last_error).__name__,
+            exc_info=last_error,
+        )
         raise last_error
 
     @staticmethod
@@ -117,12 +161,17 @@ class OpenAILeadAssistant:
             ensure_ascii=False,
             indent=2,
         )
+        missing = list(current_lead.missing_required_fields())
+        missing_json = json.dumps(missing, ensure_ascii=False)
+        required_json = json.dumps(list(REQUIRED_FIELDS_FOR_COMPLETION), ensure_ascii=False)
         first_name = telegram_first_name or "null"
         last_bot_message = last_assistant_message or "null"
 
         return (
             f"is_new_session: {str(is_new_session).lower()}\n"
             f"telegram_first_name: {first_name}\n"
+            f"required_fields_for_completion: {required_json}\n"
+            f"missing_required_fields_for_completion: {missing_json}\n"
             f"current_lead:\n{lead_json}\n\n"
             f"conversation_history:\n{history_json}\n\n"
             f"last_assistant_message:\n{last_bot_message}\n\n"
@@ -309,18 +358,7 @@ class OpenAILeadAssistant:
 
     @staticmethod
     def _extract_contact(message: str) -> str | None:
-        if message.startswith("@") and len(message) > 1:
-            return message
-
-        email_match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", message)
-        if email_match:
-            return email_match.group(0)
-
-        compact = re.sub(r"[^\d+]", "", message)
-        digits = re.sub(r"\D", "", compact)
-        if len(digits) >= 10:
-            return compact
-        return None
+        return extract_contact_from_free_text(message)
 
     @staticmethod
     def _extract_company(message: str) -> str | None:

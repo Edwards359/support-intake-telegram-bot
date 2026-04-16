@@ -1,8 +1,10 @@
-from .config import Settings, get_settings
+from .config import PromptVariant, Settings, get_settings
 from .logging import setup_logging
-from .schemas import AssistantTurn, LeadSession, SalesLead
+from .schemas import REQUIRED_FIELDS_FOR_COMPLETION, AssistantTurn, LeadSession, SalesLead
 
 __all__ = [
+    "PromptVariant",
+    "REQUIRED_FIELDS_FOR_COMPLETION",
     "AssistantTurn",
     "LeadSession",
     "SalesLead",
